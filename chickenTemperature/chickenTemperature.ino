@@ -18,6 +18,7 @@ int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
 int PowerSwitch_Pin = 11; //Powerswitch Output pin on digital 11
 float Desired_Temp = -7.0; //temperature to maintain at
 int TempLED_Pin = 10; //Temperate LED pin on digital 10
+float Error_Temp = -1000; //Temperature returned if there is an error.
 
 //Temperature chip i/o
 OneWire ds(DS18S20_Pin); // on digital pin 2
@@ -58,20 +59,25 @@ void loop(void)
 
 void processTemperature( float temp, boolean timeOut )
 {
-  if( temp < Desired_Temp )
+  if( temp == Error_Temp )
+  {
+    //Ack, signal an error.
+    Serial.println("Error from Temp Sensor");
+    flashLED(TempLED_Pin, 5);
+    if( timeOut )
+    {
+      Serial.println("Turn On");
+      digitalWrite(PowerSwitch_Pin, HIGH);
+    }
+  }  
+  else if( temp < Desired_Temp )
   {
     if( timeOut )
     {
       Serial.println("Turn On");
       digitalWrite(PowerSwitch_Pin, HIGH);
     }
-    digitalWrite(TempLED_Pin, HIGH);
-    delay(100);
-    digitalWrite(TempLED_Pin, LOW);
-    delay(200);
-    digitalWrite(TempLED_Pin, HIGH);
-    delay(100);
-    digitalWrite(TempLED_Pin, LOW);
+    flashLED(TempLED_Pin, 2);
   }
   else
   {
@@ -80,10 +86,19 @@ void processTemperature( float temp, boolean timeOut )
       Serial.println("Turn Off");
       digitalWrite(PowerSwitch_Pin, LOW);
     }
-    digitalWrite(TempLED_Pin, HIGH);
-    delay(100);
-    digitalWrite(TempLED_Pin, LOW);
+    flashLED(TempLED_Pin, 1);
   } 
+}
+
+void flashLED( int pin, int times )
+{
+  for( int ii=0; ii<times; ii++ )
+  {
+    digitalWrite(pin, HIGH);
+    delay(100);
+    digitalWrite(pin, LOW);
+    delay(200);    
+  }
 }
 
 float getTemp(){
@@ -95,17 +110,17 @@ float getTemp(){
  if ( !ds.search(addr)) {
    //no more sensors on chain, reset search
    ds.reset_search();
-   return -1000;
+   return Error_Temp;
  }
 
  if ( OneWire::crc8( addr, 7) != addr[7]) {
    Serial.println("CRC is not valid!");
-   return -1000;
+   return Error_Temp;
  }
 
  if ( addr[0] != 0x10 && addr[0] != 0x28) {
    Serial.print("Device is not recognized");
-   return -1000;
+   return Error_Temp;
  }
 
  ds.reset();
