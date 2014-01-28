@@ -17,39 +17,73 @@ const int sleep_total = (interval*60)/8; // Approximate number
 int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
 int PowerSwitch_Pin = 11; //Powerswitch Output pin on digital 11
 float Desired_Temp = -7.0; //temperature to maintain at
+int TempLED_Pin = 10; //Temperate LED pin on digital 10
 
 //Temperature chip i/o
 OneWire ds(DS18S20_Pin); // on digital pin 2
 
-void setup(void) {
-watchdogOn(); // Turn on the watch dog timer.
-
-Serial.begin(9600);
-
+void setup(void) 
+{
+  watchdogOn(); // Turn on the watch dog timer.
+  
+  Serial.begin(9600);
+  pinMode(PowerSwitch_Pin, OUTPUT);
+  pinMode(TempLED_Pin, OUTPUT);
+  
+  float temperature = getTemp();
+  Serial.println("Starting Up!");
+  Serial.println(temperature);
+  processTemperature(temperature, true);
+  Serial.flush();
 }
 
 void loop(void) 
 {
   goToSleep(); // ATmega328 goes to sleep for about 8 seconds
   // and continues to execute code when it wakes up
+  float temperature = getTemp();
+  Serial.println(temperature);
   
-  if (sleep_count == sleep_total) 
+  if (sleep_count >= sleep_total) 
   {
-    float temperature = getTemp();
-    Serial.println(temperature);
-    if( temperature < Desired_Temp )
+    processTemperature( temperature, true );
+    sleep_count = 0;
+  }
+  else
+  {
+    processTemperature( temperature, false );
+  }
+  Serial.flush();
+}
+
+void processTemperature( float temp, boolean timeOut )
+{
+  if( temp < Desired_Temp )
+  {
+    if( timeOut )
     {
       Serial.println("Turn On");
       digitalWrite(PowerSwitch_Pin, HIGH);
     }
-    else
+    digitalWrite(TempLED_Pin, HIGH);
+    delay(100);
+    digitalWrite(TempLED_Pin, LOW);
+    delay(200);
+    digitalWrite(TempLED_Pin, HIGH);
+    delay(100);
+    digitalWrite(TempLED_Pin, LOW);
+  }
+  else
+  {
+    if( timeOut )
     {
-      Serial.println("Turn Off);
+      Serial.println("Turn Off");
       digitalWrite(PowerSwitch_Pin, LOW);
     }
-    Serial.flush();
-    sleep_count = 0;
-  }
+    digitalWrite(TempLED_Pin, HIGH);
+    delay(100);
+    digitalWrite(TempLED_Pin, LOW);
+  } 
 }
 
 float getTemp(){
