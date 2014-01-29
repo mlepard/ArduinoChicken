@@ -6,19 +6,20 @@
 
 // This variable is made volatile because it is changed inside
 // an interrupt function
-volatile int sleep_count = 0; // Keep track of how many sleep
-// cycles have been completed.
+volatile int heat_count = 0; // Keep track of how many sleep
+// cycles have been completed .
 const int interval = 10; // Interval in minutes between waking
 // and doing tasks.
-const int sleep_total = (interval*60)/8; // Approximate number 
-// of sleep cycles needed before the interval defined above 
-// elapses. Not that this does integer math.
+int min_heat_count = (interval*60)/8; // Approximate minimum number 
+// of sleep cycles needed before the heat shoudl turn off
 
 int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
-int PowerSwitch_Pin = 11; //Powerswitch Output pin on digital 11
-float Desired_Temp = -7.0; //temperature to maintain at
+int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 11
+float Heat_Temp = -2.0; //temperature to heat until
+float Cool_Temp = -7.0; //temerpature to cool until
 int TempLED_Pin = 10; //Temperate LED pin on digital 10
 float Error_Temp = -1000; //Temperature returned if there is an error.
+boolean isOn = false;
 
 //Temperature chip i/o
 OneWire ds(DS18S20_Pin); // on digital pin 2
@@ -34,7 +35,7 @@ void setup(void)
   float temperature = getTemp();
   Serial.println("Starting Up!");
   Serial.println(temperature);
-  processTemperature(temperature, true);
+  processTemperature(temperature);
   Serial.flush();
 }
 
@@ -43,51 +44,65 @@ void loop(void)
   goToSleep(); // ATmega328 goes to sleep for about 8 seconds
   // and continues to execute code when it wakes up
   float temperature = getTemp();
-  Serial.println(temperature);
+ 
+  processTemperature( temperature);
   
-  if (sleep_count >= sleep_total) 
-  {
-    processTemperature( temperature, true );
-    sleep_count = 0;
-  }
-  else
-  {
-    processTemperature( temperature, false );
-  }
   Serial.flush();
 }
 
-void processTemperature( float temp, boolean timeOut )
+void processTemperature( float temp )
 {
   if( temp == Error_Temp )
   {
     //Ack, signal an error.
     Serial.println("Error from Temp Sensor");
     flashLED(TempLED_Pin, 5);
-    if( timeOut )
-    {
-      Serial.println("Turn On");
-      digitalWrite(PowerSwitch_Pin, HIGH);
-    }
-  }  
-  else if( temp < Desired_Temp )
-  {
-    if( timeOut )
-    {
-      Serial.println("Turn On");
-      digitalWrite(PowerSwitch_Pin, HIGH);
-    }
-    flashLED(TempLED_Pin, 2);
+    Serial.println("Turn On");
+    digitalWrite(PowerSwitch_Pin, HIGH);
+    return;
   }
-  else
+  
+  Serial.println(temp);
+
+  if( temp <= Cool_Temp ||
+      (temp < Heat_Temp && isOn)  )
   {
-    if( timeOut )
+    //coop is below the minimum temperature OR
+    //coop is between the minimum temperature and maximum
+    //temperature and is heating up.
+    Serial.println("Turn On");
+    digitalWrite(PowerSwitch_Pin, HIGH);
+    isOn = true;
+  }
+  else if( temp >= Heat_Temp && isOn )
+  {
+    //the coop is above the maximum temperature
+    //and is heating up.
+    //Check to see if we've been on long enough
+    //if so, turn off.
+    if( heat_count >= min_heat_count )
     {
       Serial.println("Turn Off");
       digitalWrite(PowerSwitch_Pin, LOW);
-    }
-    flashLED(TempLED_Pin, 1);
-  } 
+      heat_count = 0;
+      isOn = false;
+    }    
+  }
+  else if( temp >= Heat_Temp ||
+           (temp <= Heat_Temp && !isOn) )
+  {
+    //coop is above the maximum temperature OR
+    //coop is between the minimum temperature and maximum
+    //temperature and is cooling off.
+    Serial.println("Turn Off");
+    digitalWrite(PowerSwitch_Pin, LOW);
+    isOn = false;
+    heat_count = 0;
+  }
+ 
+  flashLED(TempLED_Pin, 2);
+  delay(650);
+  flashLEDTemp(TempLED_Pin, temp);  
 }
 
 void flashLED( int pin, int times )
@@ -95,10 +110,26 @@ void flashLED( int pin, int times )
   for( int ii=0; ii<times; ii++ )
   {
     digitalWrite(pin, HIGH);
-    delay(100);
+    delay(200);
     digitalWrite(pin, LOW);
-    delay(200);    
+    delay(400);    
   }
+}
+
+void flashLEDTemp( int pin, float temperature )
+{
+  //if the temp is > 0, do a long flash
+  if( temperature > 0.0 )
+  {
+    digitalWrite(pin, HIGH);
+    delay(500);
+    digitalWrite(pin, LOW);
+    delay(200);
+    return;	
+  }
+  
+  int numTimesFlash = (int)(-1.0*temperature / 2.0) + 1;
+  flashLED( pin, numTimesFlash );
 }
 
 float getTemp(){
@@ -195,7 +226,10 @@ MCUSR = MCUSR & B11110111;
 
 ISR(WDT_vect)
 {
-sleep_count ++; // keep track of how many sleep cycles
-// have been completed.
+  if( isOn )
+  {
+    heat_count ++; // keep track of how many sleep cycles
+                  // have been completed if heat is on.
+  }
 }
 
