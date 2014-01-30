@@ -14,7 +14,7 @@ int min_heat_count = (interval*60)/8; // Approximate minimum number
 // of sleep cycles needed before the heat shoudl turn off
 
 int DS18S20_Pin = 2; //DS18S20 Signal pin on digital 2
-int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 11
+int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 9
 float Heat_Temp = -2.0; //temperature to heat until
 float Cool_Temp = -7.0; //temerpature to cool until
 int TempLED_Pin = 10; //Temperate LED pin on digital 10
@@ -57,6 +57,7 @@ void processTemperature( float temp )
     //Ack, signal an error.
     Serial.println("Error from Temp Sensor");
     flashLED(TempLED_Pin, 5);
+    //Just to be safe, turn the heat on.
     Serial.println("Turn On");
     digitalWrite(PowerSwitch_Pin, HIGH);
     return;
@@ -73,8 +74,11 @@ void processTemperature( float temp )
     Serial.println("Turn On");
     digitalWrite(PowerSwitch_Pin, HIGH);
     isOn = true;
+    flashLED(TempLED_Pin, 2);
+    delay(200);
+    flashLEDTemp(TempLED_Pin, temp);  
   }
-  else if( temp >= Heat_Temp && isOn )
+  /*else if( temp >= Heat_Temp && isOn )
   {
     //the coop is above the maximum temperature
     //and is heating up.
@@ -86,8 +90,17 @@ void processTemperature( float temp )
       digitalWrite(PowerSwitch_Pin, LOW);
       heat_count = 0;
       isOn = false;
-    }    
-  }
+      flashLED(TempLED_Pin, 1);
+      delay(200);
+      flashLEDTemp(TempLED_Pin, temp);  
+    }
+    else
+    {
+      flashLED(TempLED_Pin, 2);
+      delay(200);
+      flashLEDTemp(TempLED_Pin, temp);  
+    }
+  }*/
   else if( temp >= Heat_Temp ||
            (temp <= Heat_Temp && !isOn) )
   {
@@ -98,11 +111,10 @@ void processTemperature( float temp )
     digitalWrite(PowerSwitch_Pin, LOW);
     isOn = false;
     heat_count = 0;
+    flashLED(TempLED_Pin, 1);
+    delay(200);
+    flashLEDTemp(TempLED_Pin, temp);  
   }
- 
-  flashLED(TempLED_Pin, 2);
-  delay(650);
-  flashLEDTemp(TempLED_Pin, temp);  
 }
 
 void flashLED( int pin, int times )
@@ -112,7 +124,7 @@ void flashLED( int pin, int times )
     digitalWrite(pin, HIGH);
     delay(200);
     digitalWrite(pin, LOW);
-    delay(400);    
+    delay(300);    
   }
 }
 
