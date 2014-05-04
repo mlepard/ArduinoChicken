@@ -6,8 +6,8 @@
 #include <avr/power.h>
 
 const int motorNumber = 1;     
-const int forwardPin =  3;   
-const int reversePin = 5;
+const int doorOpenPin =  3;   
+const int doorClosedPin = 5;
 const int alarmPin = 2;
 
 const int maxMotorTime = 2 * 1000; //max time for motor to operate in ms
@@ -32,8 +32,6 @@ byte AlarmBits;
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *doorMotor;
 DS3231 Clock;
-
-bool tempDoorState = 0;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
@@ -61,18 +59,19 @@ typedef struct DateTime DateTime;
 
 bool isDoorOpen()
 {
-  return false;
+  return !digitalRead(doorOpenPin);;
 }
 
 bool isDoorClosed()
 {
-  return false;
+  return !digitalRead(doorClosedPin);;
 }
 
 void openDoor()
 {
   if( isDoorOpen() )
   {
+    Serial.println("Door is already open!");    
     return; 
   }
   
@@ -87,15 +86,27 @@ void openDoor()
     doorMotor->run(openDoorMotorDirection);
     currentTime = millis();
     runningTime = currentTime - startTime;
+    delay(100);
   }
   
-  doorMotor->run(RELEASE);  
+  if( isDoorOpen() )
+  {
+    Serial.println("Door is now open.");
+  }
+  else
+  {
+    Serial.println("Motor timeout...");
+  }
+  
+  doorMotor->run(RELEASE);
+  digitalWrite(13, HIGH);
 }
 
 void closeDoor()
 {
   if( isDoorClosed() )
   {
+    Serial.println("Door is already closed!");
     return; 
   }
   
@@ -110,9 +121,22 @@ void closeDoor()
     doorMotor->run(closeDoorMotorDirection);
     currentTime = millis();
     runningTime = currentTime - startTime;
+    delay(100);
   }
   
+  if( isDoorClosed() )
+  {
+    Serial.println("Door is now close.");
+  }
+  else
+  {
+    Serial.println("Motor timeout...");
+  }
+  
+  
   doorMotor->run(RELEASE);
+  
+  digitalWrite(13, LOW);
 }
 
 //Interrupt service routine for external interrupt on INT0 pin conntected to /INT
@@ -123,10 +147,7 @@ void RTCAlarmTriggered()
 
 void enterSleep(void)
 {
-  Serial.println("sleep!");
-  
-  
-  /* Setup pin2 as an interrupt and attach handler. */
+    /* Setup pin2 as an interrupt and attach handler. */
   attachInterrupt(0, RTCAlarmTriggered, LOW);
   delay(100);
   
@@ -137,7 +158,7 @@ void enterSleep(void)
   byte spi_save = SPCR;
   SPCR = 0;
   
-  digitalWrite(13, LOW);
+  //digitalWrite(13, LOW);
   power_adc_disable();
   power_spi_disable();
   power_timer0_disable();
@@ -160,25 +181,17 @@ void enterSleep(void)
 void wakeUp()
 {
   Clock.turnOffAlarm(1);
-  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);  
-  
-  Serial.print("Wake Up! Current Time is: ");
-  Serial.print(gHour, DEC);
-  Serial.print(':');
-  Serial.print(gMinute, DEC);
-  Serial.print(':');
-  Serial.print(gSecond, DEC);
-  Serial.println();  
-  
-  Serial.flush();
 }
 
 void setup() {
   Serial.begin(9600);
+  Serial.println("############### Setup ##############");
   
-  pinMode(forwardPin, INPUT_PULLUP);      
-  pinMode(reversePin, INPUT_PULLUP);
-  pinMode(alarmPin, INPUT_PULLUP);           
+  pinMode(doorOpenPin, INPUT_PULLUP);      
+  pinMode(doorClosedPin, INPUT_PULLUP);
+  pinMode(alarmPin, INPUT_PULLUP);    
+
+  pinMode(13, OUTPUT);  
     
   doorMotor = AFMS.getMotor(motorNumber);
   
@@ -187,45 +200,92 @@ void setup() {
   
   doorMotor->setSpeed(motorSpeed);
   
-  Serial.print("Setup! Current Time is: ");
+  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
+  DateTime currentDateTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
 
-  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);    
-  
-  Serial.print(gHour, DEC);
-  Serial.print(':');
-  Serial.print(gMinute, DEC);
-  Serial.print(':');
-  Serial.print(gSecond, DEC);
+  Serial.print("Current Date is: ");
+  Serial.print(currentDateTime.date.month, DEC);
+  Serial.print("  ");
+  Serial.println(currentDateTime.date.date, DEC);
+
+  Serial.print("Current Time is: ");
+  printTimeString(currentDateTime.time);
   Serial.println();
-  
+   
   AlarmBits = ALRM2_SET;
   AlarmBits <<= 4;
   AlarmBits |= ALRM1_SET;
+  
+  Time doorOpenTime = getDoorOpenTime( currentDateTime.date );
+  Time doorCloseTime = getDoorCloseTime( currentDateTime.date );
+  Serial.print("Door Open Time is: ");
+  printTimeString(doorOpenTime);
+  Serial.println();
+  Serial.print("Door Close Time is: ");
+  printTimeString(doorCloseTime);
+  Serial.println();
+  
+  if( currentDateTime.time.hour < doorOpenTime.hour  &&
+      currentDateTime.time.minute < doorOpenTime.minute )
+  {
+    //Time is before the door open time...close the door
+    Serial.println("Current Time is less than Door Open Time");
+    Serial.println("Door should be closed!");
+    closeDoor();
+  }
+  else if( currentDateTime.time.hour < doorCloseTime.hour &&
+           currentDateTime.time.minute < doorCloseTime.minute )
+  {
+    //Time is before the door close time...open the door
+    Serial.print("Current Time is greater than Door Open Time,");
+    Serial.println(" but less than Door Close Time.");
+    Serial.println("Door should be open!");
+    openDoor();
+  }
+  else
+  {
+    //Time is after the door close time...close the door
+    Serial.println("Current Time is greater than Door Close Time.");
+    Serial.println("Door should be close!");
+    closeDoor();
+  }
+
 }
 
 void loop(){
-  /*int forwardState = digitalRead(forwardPin);
-  int reverseState = digitalRead(reversePin);
-  
-  // check if the pushbutton is pressed.
-  // if it is, the buttonState is HIGH:
-  if (forwardState == LOW) {     
-    Serial.println("openDoor");
-   openDoor();
-  } 
-  else if (reverseState == LOW) {
-    Serial.println("closeDoor");
-   closeDoor();
-  }*/  
   
   Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
   DateTime currentTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
-  DateTime alarmTime = getNextSunAlarm( currentTime );
+  
+  DateTime alarmTime = getNextDoorAlarm( currentTime );
   Clock.setA1Time(gDoW, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, true, false, false);
   Clock.turnOnAlarm(1);
   //not sure why you have to do this... 
   Clock.checkIfAlarm(1);
 
+  Serial.print("Go to sleep until ");
+  printTimeString(alarmTime.time);
+  Serial.println();
+
   enterSleep();
-  wakeUp();   
+  wakeUp();
+
+  Serial.print("Stop Sleeping, it's ");
+  printTimeString(currentTime.time);
+  Serial.println();  
+  
+  //We've woken up at the next door event time.
+  //Quick hack to determine which door event we should do..
+  //If we woke up in the morning (before 12 noon) we must
+  //want to open the door.
+  if( gHour < 12 )
+  {
+     Serial.println("Open the Coop Door!");
+     openDoor();
+  }
+   else
+   {
+     Serial.println("Close the Coop Door!");
+     closeDoor();
+   }  
 }

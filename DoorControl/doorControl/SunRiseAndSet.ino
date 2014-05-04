@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdio.h> // for function sprintf
 
+//#define DEBUG_PRINT
+
 struct SunRiseAndSetData {
   Date startDate;
   Time sunrise;
@@ -41,129 +43,243 @@ SunRiseAndSetData sunData[24] = {
 Time sunriseExtraTime = { 0, 20, 0 };
 Time sunsetExtraTime = { 0, 15, 0 };
 
-struct DateTime getNextSunAlarm( struct DateTime currentDateTime )
+struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
 {
-  Serial.println("Getting next sun alarm");
-  Serial.print("Current Time is: ");
-  printTimeString(currentDateTime.time);
-  Serial.print("\nCurrent Date is: ");
-  Serial.print(currentDateTime.date.month, DEC);
+  
+#ifdef DEBUG_PRINT  
+  Serial.print("*************Get Sunrise And Set Data******************\n");
+  Serial.print("  Current Date is: ");
+  Serial.print(currentDate.month, DEC);
   Serial.print("  ");
-  Serial.println(currentDateTime.date.date, DEC);
+  Serial.println(currentDate.date, DEC);
+#endif  
   
-  DateTime alarmTime = { {0,0,0}, {0, 0} };
-  
-  int index = 2 * (currentDateTime.date.month - 1);
+  int index = 2 * (currentDate.month - 1);
   float deltaDate;
-  if( currentDateTime.date.date > 15 )
+  if( currentDate.date > 15 )
   {
     index++;
-    deltaDate = 31 - currentDateTime.date.date;
+    deltaDate = 31 - currentDate.date;
     deltaDate = 1.0 - deltaDate / 15.0;
   }
   else
   {
-    deltaDate = 15 - currentDateTime.date.date;
+    deltaDate = 15 - currentDate.date;
     deltaDate = 1.0 - deltaDate / 15.0;
   }
-  Serial.print("Sun Data index is: ");
-  Serial.println(index, DEC);
+  
   SunRiseAndSetData currentSunData = sunData[index];
-  Serial.print("Current Sun Data is: ");
+  
+#ifdef DEBUG_PRINT  
+  Serial.print("  Sun Data index is: ");
+  Serial.println(index, DEC);
+  Serial.print("  Current Sun Data is: ");
   Serial.print(currentSunData.startDate.month, DEC);
   Serial.print("  ");
   Serial.print(currentSunData.startDate.date, DEC);
-  Serial.print("\nSunrise is: "); 
+  Serial.print("\n  Sunrise is: "); 
   printTimeString(currentSunData.sunrise);
-  Serial.print("\nSunset is: "); 
+  Serial.print("\n  Sunset is: "); 
   printTimeString(currentSunData.sunset);
   Serial.println();
-  Serial.print("Delta Date is: ");
+  Serial.print("  Delta Date is: ");
   Serial.println(deltaDate, DEC);
+  Serial.print("********************* End **********************\n");
+#endif
+
+  return currentSunData;  
+}
+
+struct Time getDoorOpenTime( struct Date currentDate )
+{
+  Time doorOpenTime = {0, 0, 0};
+  SunRiseAndSetData currentSunData = getSunRiseAndSetData( currentDate );
   
-  Serial.print("For Sunrise:\n");
-  Serial.print("Sunrise Delta is: ");
+#ifdef DEBUG_PRINT  
+  Serial.print("************* Getting Door Open Time ***********\n");  
+  Serial.print("  Sunrise is: "); 
+  printTimeString(currentSunData.sunrise);
+  Serial.print("  Sunrise Delta is: ");
   Serial.println(currentSunData.sunriseDelta, DEC);
+#endif  
   
+  float deltaDate;
+  if( currentDate.date > 15 )
+  {
+    deltaDate = 31 - currentDate.date;
+    deltaDate = 1.0 - deltaDate / 15.0;
+  }
+  else
+  {
+    deltaDate = 15 - currentDate.date;
+    deltaDate = 1.0 - deltaDate / 15.0;
+  }
+
   Time dateDeltaTime = {0, 0, 0};
-  Time adjustedSunTime = {0, 0, 0};
   if( currentSunData.sunriseDelta < 0 )
   { 
     dateDeltaTime.minute = deltaDate * -1*currentSunData.sunriseDelta;
-    adjustedSunTime = subtractTime( currentSunData.sunrise, dateDeltaTime );
-    Serial.print("AdjusedSunTime 1 is: "); 
-    printTimeString(adjustedSunTime);
+    doorOpenTime = subtractTime( currentSunData.sunrise, dateDeltaTime );
+    
+#ifdef DEBUG_PRINT  
+    Serial.print("  DateDeltaTime is: "); 
+    printTimeString(dateDeltaTime);
+    Serial.print("\n  Door Open Time 1 is: "); 
+    printTimeString(doorOpenTime);
+#endif
+
   }
   else
   {
     dateDeltaTime.minute = deltaDate * currentSunData.sunriseDelta;
-    adjustedSunTime = addTime( currentSunData.sunrise, dateDeltaTime );
-    Serial.print("AdjusedSunTime 1 is: "); 
-    printTimeString(adjustedSunTime);
+    doorOpenTime = addTime( currentSunData.sunrise, dateDeltaTime );
+#ifdef DEBUG_PRINT  
+    Serial.print("  DateDeltaTime is: "); 
+    printTimeString(dateDeltaTime);
+    Serial.print("\n  Door Open Time 1 is: "); 
+    printTimeString(doorOpenTime);
+#endif    
   }
-  adjustedSunTime = addTime( adjustedSunTime, sunriseExtraTime );
-  Serial.print("\nDateDeltaTime is: "); 
-  printTimeString(dateDeltaTime);
-  Serial.print("\nAdjusedSunTime 2 is: "); 
-  printTimeString(adjustedSunTime);
+  doorOpenTime = addTime( doorOpenTime, sunriseExtraTime );
+
+#ifdef DEBUG_PRINT  
+  Serial.print("\n  Final Door Open Time is: "); 
+  printTimeString(doorOpenTime);
   Serial.println();
+  Serial.print("********************* End **********************\n");
+#endif
+
+  return doorOpenTime;  
+}
+
+struct Time getDoorCloseTime( struct Date currentDate )
+{
+  Time doorCloseTime = {0, 0, 0};
+  SunRiseAndSetData currentSunData = getSunRiseAndSetData( currentDate );
   
-  if( currentDateTime.time.hour < adjustedSunTime.hour  &&
-      currentDateTime.time.minute < adjustedSunTime.minute )
-  {
-    alarmTime.time = adjustedSunTime;
-    alarmTime.date = currentDateTime.date;
-    Serial.print("Sunrise Alarm is: "); 
-    printTimeString(alarmTime.time);
-    Serial.println();
-    return alarmTime;
-  }
-  
-  Serial.print("For Sunset:\n");
-  Serial.print("Sunset Delta is: ");
+#ifdef DEBUG_PRINT  
+  Serial.print("************* Getting Door Close Time ***********\n");
+  Serial.print("  Sunset is: "); 
+  printTimeString(currentSunData.sunset);
+  Serial.print("  Sunset Delta is: ");
   Serial.println(currentSunData.sunsetDelta, DEC);
+#endif
+
+  float deltaDate;
+  if( currentDate.date > 15 )
+  {
+    deltaDate = 31 - currentDate.date;
+    deltaDate = 1.0 - deltaDate / 15.0;
+  }
+  else
+  {
+    deltaDate = 15 - currentDate.date;
+    deltaDate = 1.0 - deltaDate / 15.0;
+  }
+
+  Time dateDeltaTime = {0, 0, 0};
   if( currentSunData.sunsetDelta < 0 )
   { 
     dateDeltaTime.minute = deltaDate * -1*currentSunData.sunsetDelta;
-    adjustedSunTime = subtractTime( currentSunData.sunset, dateDeltaTime );
-    Serial.print("AdjusedSunTime 1 is: "); 
-    printTimeString(adjustedSunTime);
+    doorCloseTime = subtractTime( currentSunData.sunset, dateDeltaTime );
+#ifdef DEBUG_PRINT  
+    Serial.print("  DateDeltaTime is: "); 
+    printTimeString(dateDeltaTime);
+    Serial.print("\n  Door Close Time 1 is: "); 
+    printTimeString(doorCloseTime);
+#endif
   }
   else
   {
     dateDeltaTime.minute = deltaDate * currentSunData.sunsetDelta;
-    adjustedSunTime = addTime( currentSunData.sunset, dateDeltaTime );
-    Serial.print("AdjusedSunTime 1 is: "); 
-    printTimeString(adjustedSunTime);
+    doorCloseTime = addTime( currentSunData.sunset, dateDeltaTime );
+#ifdef DEBUG_PRINT  
+    Serial.print("  DateDeltaTime is: "); 
+    printTimeString(dateDeltaTime);
+    Serial.print("\n  Door Close Time 1 is: "); 
+    printTimeString(doorCloseTime);
+#endif
   }
-  adjustedSunTime = addTime( adjustedSunTime, sunsetExtraTime );
-  Serial.print("\nDateDeltaTime is: "); 
-  printTimeString(dateDeltaTime);
-  Serial.print("\nAdjusedSunTime 2 is: "); 
-  printTimeString(adjustedSunTime);
-  Serial.println();
+  doorCloseTime = addTime( doorCloseTime, sunriseExtraTime );
 
-  if( currentDateTime.time.hour < adjustedSunTime.hour &&
-      currentDateTime.time.hour < adjustedSunTime.minute )
+#ifdef DEBUG_PRINT  
+  Serial.print("\n  Final Door Close Time is: "); 
+  printTimeString(doorCloseTime);
+  Serial.println();  
+  Serial.print("********************* End **********************\n");  
+#endif
+
+  return doorCloseTime;  
+}
+
+struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
+{
+  
+#ifdef DEBUG_PRINT    
+  Serial.println("************ Getting next sun alarm *************");
+  Serial.print("Current Time is: ");
+  printTimeString(currentDateTime.time);
+  Serial.println();
+#endif
+
+  DateTime alarmTime = { {0,0,0}, {0, 0} };
+  
+  Time doorOpenTime = getDoorOpenTime( currentDateTime.date );  
+  
+  if( currentDateTime.time.hour < doorOpenTime.hour  &&
+      currentDateTime.time.minute < doorOpenTime.minute )
   {
-    alarmTime.time = adjustedSunTime;
+    alarmTime.time = doorOpenTime;
     alarmTime.date = currentDateTime.date;
-    Serial.print("Sunset Alarm is: "); 
+
+#ifdef DEBUG_PRINT  
+    Serial.print("Door Open Alarm is: "); 
     printTimeString(alarmTime.time);
     Serial.println();
+#endif
+
+    return alarmTime;
+  }
+  
+  Time doorCloseTime = getDoorCloseTime( currentDateTime.date );
+  
+  if( currentDateTime.time.hour < doorCloseTime.hour &&
+      currentDateTime.time.hour < doorCloseTime.minute )
+  {
+    alarmTime.time = doorCloseTime;
+    alarmTime.date = currentDateTime.date;
+    
+#ifdef DEBUG_PRINT  
+    Serial.print("Door Close Alarm is: "); 
+    printTimeString(alarmTime.time);
+    Serial.println();
+#endif
+
     return alarmTime;
   }
   else
   {
     //go into the next day (sunrise!)
-    index++;
-    if( index == 24 )
-     index = 0;
-    currentSunData = sunData[index];
-    alarmTime.time = addTime( currentSunData.sunrise, sunriseExtraTime );
-    Serial.print("Next Day Sunrise Alarm is: "); 
+    Date tomorrow = currentDateTime.date;
+    tomorrow.date++;
+    if( tomorrow.date > 31 )
+    {
+      tomorrow.date = 1;
+      tomorrow.month++;
+    }
+    if( tomorrow.month > 12 )
+      tomorrow.month = 1;
+    
+    doorOpenTime = getDoorOpenTime( tomorrow );  
+    alarmTime.time = doorOpenTime;
+    alarmTime.date = tomorrow;
+
+#ifdef DEBUG_PRINT  
+    Serial.print("Tomorrow Door Open Alarm is: "); 
     printTimeString(alarmTime.time);
     Serial.println();
+#endif
+
     return alarmTime;
   }
         
