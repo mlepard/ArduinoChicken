@@ -25,7 +25,7 @@ byte ALRM1_SET = ALRM1_MATCH_HR_MIN_SEC;
 #define ALRM2_ONCE_PER_MIN     0b111   // once per minute (00 seconds of every minute)
 #define ALRM2_MATCH_MIN        0b110   // when minutes match
 #define ALRM2_MATCH_HR_MIN     0b100   // when hours and minutes match
-byte ALRM2_SET = ALRM2_MATCH_HR_MIN;
+byte ALRM2_SET = 0b000;
 
 byte AlarmBits;
 
@@ -35,7 +35,29 @@ DS3231 Clock;
 
 bool tempDoorState = 0;
 
-byte year, month, date, DoW, hour, minute, second;
+byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
+
+struct Time {
+  byte hour;
+  byte minute;
+  byte seconds;
+};
+
+typedef struct Time Time;
+
+struct Date {
+  byte month;
+  byte date;
+};
+
+typedef struct Date Date;
+
+struct DateTime {
+  Time time;
+  Date date;
+};
+
+typedef struct DateTime DateTime;
 
 bool isDoorOpen()
 {
@@ -112,24 +134,43 @@ void enterSleep(void)
   
   sleep_enable();
   
+  byte spi_save = SPCR;
+  SPCR = 0;
+  
+  digitalWrite(13, LOW);
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer1_disable();
+  power_timer2_disable();
+  power_twi_disable();   
+  
   sleep_mode();
   
   /* The program will continue from here. */
   
   /* First thing to do is disable sleep. */
-  sleep_disable(); 
+  sleep_disable();
+  
+  power_all_enable();
+ 
+  SPCR = spi_save; 
 }
 
 void wakeUp()
 {
-  Clock.getTime(year, month, date, DoW, hour, minute, second);    
+  Clock.turnOffAlarm(1);
+  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);  
   
-  Serial.print(hour, DEC);
+  Serial.print("Wake Up! Current Time is: ");
+  Serial.print(gHour, DEC);
   Serial.print(':');
-  Serial.print(minute, DEC);
+  Serial.print(gMinute, DEC);
   Serial.print(':');
-  Serial.print(second, DEC);
+  Serial.print(gSecond, DEC);
   Serial.println();  
+  
+  Serial.flush();
 }
 
 void setup() {
@@ -137,8 +178,7 @@ void setup() {
   
   pinMode(forwardPin, INPUT_PULLUP);      
   pinMode(reversePin, INPUT_PULLUP);
-  pinMode(2, INPUT_PULLUP);      
-  pinMode(13, INPUT_PULLUP);      
+  pinMode(alarmPin, INPUT_PULLUP);           
     
   doorMotor = AFMS.getMotor(motorNumber);
   
@@ -147,24 +187,20 @@ void setup() {
   
   doorMotor->setSpeed(motorSpeed);
   
-  Serial.println("setup!");
+  Serial.print("Setup! Current Time is: ");
 
-  Clock.getTime(year, month, date, DoW, hour, minute, second);    
+  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);    
   
-  Serial.print(hour, DEC);
+  Serial.print(gHour, DEC);
   Serial.print(':');
-  Serial.print(minute, DEC);
+  Serial.print(gMinute, DEC);
   Serial.print(':');
-  Serial.print(second, DEC);
+  Serial.print(gSecond, DEC);
   Serial.println();
   
   AlarmBits = ALRM2_SET;
   AlarmBits <<= 4;
   AlarmBits |= ALRM1_SET;
-  
-  Clock.enableOscillator(true,false, 0);
-
-
 }
 
 void loop(){
@@ -180,20 +216,16 @@ void loop(){
   else if (reverseState == LOW) {
     Serial.println("closeDoor");
    closeDoor();
-  }*/
+  }*/  
   
-  Clock.getTime(year, month, date, DoW, hour, minute, second);    
-  
-  
-  //Clock.setA1Time(DoW, hour, minute, second + 2, AlarmBits, true, false, false);
-  //Clock.setA2Time(Clock.getDate(), Clock.getHour(h12, PM), Clock.getMinute(), AlarmBits, false, false, false);
-  // Turn alarms on
-  //Clock.turnOnAlarm(1);
-  //Clock.turnOnAlarm(2);
-  
-  //Clock.enableOscillator(true,false, 0);
+  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
+  DateTime currentTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
+  DateTime alarmTime = getNextSunAlarm( currentTime );
+  Clock.setA1Time(gDoW, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, true, false, false);
+  Clock.turnOnAlarm(1);
+  //not sure why you have to do this... 
+  Clock.checkIfAlarm(1);
 
-  //enterSleep();
-  //wakeUp();  
-  
+  enterSleep();
+  wakeUp();   
 }
