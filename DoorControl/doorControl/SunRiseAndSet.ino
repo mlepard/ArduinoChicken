@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h> // for function sprintf
 
-//#define DEBUG_PRINT
+#define DEBUG_PRINT 1
 
 struct SunRiseAndSetData {
   Date startDate;
@@ -47,12 +47,13 @@ struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
 {
   
 #ifdef DEBUG_PRINT  
-  Serial.print("*************Get Sunrise And Set Data******************\n");
-  Serial.print("  Current Date is: ");
+  Serial.print(F("*************Get Sunrise And Set Data******************\n"));
+  Serial.print(F("  Current Date is: "));
   Serial.print(currentDate.month, DEC);
   Serial.print("  ");
   Serial.println(currentDate.date, DEC);
 #endif  
+  
   
   int index = 2 * (currentDate.month - 1);
   float deltaDate;
@@ -69,23 +70,25 @@ struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
   }
   
   SunRiseAndSetData currentSunData = sunData[index];
+
   
 #ifdef DEBUG_PRINT  
-  Serial.print("  Sun Data index is: ");
+  Serial.print(F("  Sun Data index is: "));
   Serial.println(index, DEC);
-  Serial.print("  Current Sun Data is: ");
+  Serial.print(F("  Current Sun Data is: "));
   Serial.print(currentSunData.startDate.month, DEC);
   Serial.print("  ");
   Serial.print(currentSunData.startDate.date, DEC);
-  Serial.print("\n  Sunrise is: "); 
+  Serial.print(F("\n  Sunrise is: ")); 
   printTimeString(currentSunData.sunrise);
-  Serial.print("\n  Sunset is: "); 
+  Serial.print(F("\n  Sunset is: ")); 
   printTimeString(currentSunData.sunset);
   Serial.println();
-  Serial.print("  Delta Date is: ");
+  Serial.print(F("  Delta Date is: "));
   Serial.println(deltaDate, DEC);
-  Serial.print("********************* End **********************\n");
+  Serial.print(F("********************* End **********************\n"));
 #endif
+
 
   return currentSunData;  
 }
@@ -96,10 +99,10 @@ struct Time getDoorOpenTime( struct Date currentDate )
   SunRiseAndSetData currentSunData = getSunRiseAndSetData( currentDate );
   
 #ifdef DEBUG_PRINT  
-  Serial.print("************* Getting Door Open Time ***********\n");  
-  Serial.print("  Sunrise is: "); 
+  Serial.print(F("************* Getting Door Open Time ***********\n"));  
+  Serial.print(F("  Sunrise is: ")); 
   printTimeString(currentSunData.sunrise);
-  Serial.print("  Sunrise Delta is: ");
+  Serial.print(F("  Sunrise Delta is: "));
   Serial.println(currentSunData.sunriseDelta, DEC);
 #endif  
   
@@ -122,9 +125,9 @@ struct Time getDoorOpenTime( struct Date currentDate )
     doorOpenTime = subtractTime( currentSunData.sunrise, dateDeltaTime );
     
 #ifdef DEBUG_PRINT  
-    Serial.print("  DateDeltaTime is: "); 
+    Serial.print(F("  DateDeltaTime is: ")); 
     printTimeString(dateDeltaTime);
-    Serial.print("\n  Door Open Time 1 is: "); 
+    Serial.print(F("\n  Door Open Time 1 is: ")); 
     printTimeString(doorOpenTime);
 #endif
 
@@ -134,19 +137,19 @@ struct Time getDoorOpenTime( struct Date currentDate )
     dateDeltaTime.minute = deltaDate * currentSunData.sunriseDelta;
     doorOpenTime = addTime( currentSunData.sunrise, dateDeltaTime );
 #ifdef DEBUG_PRINT  
-    Serial.print("  DateDeltaTime is: "); 
+    Serial.print(F("  DateDeltaTime is: ")); 
     printTimeString(dateDeltaTime);
-    Serial.print("\n  Door Open Time 1 is: "); 
+    Serial.print(F("\n  Door Open Time 1 is: ")); 
     printTimeString(doorOpenTime);
 #endif    
   }
   doorOpenTime = addTime( doorOpenTime, sunriseExtraTime );
 
 #ifdef DEBUG_PRINT  
-  Serial.print("\n  Final Door Open Time is: "); 
+  Serial.print(F("\n  Final Door Open Time is: ")); 
   printTimeString(doorOpenTime);
   Serial.println();
-  Serial.print("********************* End **********************\n");
+  Serial.print(F("********************* End **********************\n"));
 #endif
 
   return doorOpenTime;  
@@ -158,10 +161,10 @@ struct Time getDoorCloseTime( struct Date currentDate )
   SunRiseAndSetData currentSunData = getSunRiseAndSetData( currentDate );
   
 #ifdef DEBUG_PRINT  
-  Serial.print("************* Getting Door Close Time ***********\n");
-  Serial.print("  Sunset is: "); 
+  Serial.print(F("************* Getting Door Close Time ***********\n"));
+  Serial.print(F("  Sunset is: ")); 
   printTimeString(currentSunData.sunset);
-  Serial.print("  Sunset Delta is: ");
+  Serial.print(F("  Sunset Delta is: "));
   Serial.println(currentSunData.sunsetDelta, DEC);
 #endif
 
@@ -183,9 +186,9 @@ struct Time getDoorCloseTime( struct Date currentDate )
     dateDeltaTime.minute = deltaDate * -1*currentSunData.sunsetDelta;
     doorCloseTime = subtractTime( currentSunData.sunset, dateDeltaTime );
 #ifdef DEBUG_PRINT  
-    Serial.print("  DateDeltaTime is: "); 
+    Serial.print(F("  DateDeltaTime is: ")); 
     printTimeString(dateDeltaTime);
-    Serial.print("\n  Door Close Time 1 is: "); 
+    Serial.print(F("\n  Door Close Time 1 is: ")); 
     printTimeString(doorCloseTime);
 #endif
   }
@@ -194,19 +197,19 @@ struct Time getDoorCloseTime( struct Date currentDate )
     dateDeltaTime.minute = deltaDate * currentSunData.sunsetDelta;
     doorCloseTime = addTime( currentSunData.sunset, dateDeltaTime );
 #ifdef DEBUG_PRINT  
-    Serial.print("  DateDeltaTime is: "); 
+    Serial.print(F("  DateDeltaTime is: ")); 
     printTimeString(dateDeltaTime);
-    Serial.print("\n  Door Close Time 1 is: "); 
+    Serial.print(F("\n  Door Close Time 1 is: ")); 
     printTimeString(doorCloseTime);
 #endif
   }
-  doorCloseTime = addTime( doorCloseTime, sunriseExtraTime );
+  doorCloseTime = addTime( doorCloseTime, sunsetExtraTime );
 
 #ifdef DEBUG_PRINT  
-  Serial.print("\n  Final Door Close Time is: "); 
+  Serial.print(F("\n  Final Door Close Time is: ")); 
   printTimeString(doorCloseTime);
   Serial.println();  
-  Serial.print("********************* End **********************\n");  
+  Serial.print(F("********************* End **********************\n"));  
 #endif
 
   return doorCloseTime;  
@@ -216,8 +219,8 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
 {
   
 #ifdef DEBUG_PRINT    
-  Serial.println("************ Getting next sun alarm *************");
-  Serial.print("Current Time is: ");
+  Serial.println(F("************ Getting next sun alarm *************"));
+  Serial.print(F("Current Time is: "));
   printTimeString(currentDateTime.time);
   Serial.println();
 #endif
@@ -226,14 +229,14 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
   
   Time doorOpenTime = getDoorOpenTime( currentDateTime.date );  
   
-  if( currentDateTime.time.hour < doorOpenTime.hour  &&
+  if( currentDateTime.time.hour <= doorOpenTime.hour  &&
       currentDateTime.time.minute < doorOpenTime.minute )
   {
     alarmTime.time = doorOpenTime;
     alarmTime.date = currentDateTime.date;
 
 #ifdef DEBUG_PRINT  
-    Serial.print("Door Open Alarm is: "); 
+    Serial.print(F("Door Open Alarm is: ")); 
     printTimeString(alarmTime.time);
     Serial.println();
 #endif
@@ -243,14 +246,14 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
   
   Time doorCloseTime = getDoorCloseTime( currentDateTime.date );
   
-  if( currentDateTime.time.hour < doorCloseTime.hour &&
+  if( currentDateTime.time.hour <= doorCloseTime.hour &&
       currentDateTime.time.hour < doorCloseTime.minute )
   {
     alarmTime.time = doorCloseTime;
     alarmTime.date = currentDateTime.date;
     
 #ifdef DEBUG_PRINT  
-    Serial.print("Door Close Alarm is: "); 
+    Serial.print(F("Door Close Alarm is: ")); 
     printTimeString(alarmTime.time);
     Serial.println();
 #endif
@@ -275,7 +278,7 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
     alarmTime.date = tomorrow;
 
 #ifdef DEBUG_PRINT  
-    Serial.print("Tomorrow Door Open Alarm is: "); 
+    Serial.print(F("Tomorrow Door Open Alarm is: ")); 
     printTimeString(alarmTime.time);
     Serial.println();
 #endif
@@ -328,7 +331,7 @@ struct Time subtractTime( struct Time t1, struct Time t2 )
   }
   if( wHour < 0 )
   {
-    Serial.println("lower h");
+    Serial.println(F("lower h"));
     wHour += 24;
   }
   result.seconds = wSeconds;

@@ -71,7 +71,7 @@ void openDoor()
 {
   if( isDoorOpen() )
   {
-    Serial.println("Door is already open!");    
+    Serial.println(F("Door is already open!"));    
     return; 
   }
   
@@ -91,11 +91,11 @@ void openDoor()
   
   if( isDoorOpen() )
   {
-    Serial.println("Door is now open.");
+    Serial.println(F("Door is now open."));
   }
   else
   {
-    Serial.println("Motor timeout...");
+    Serial.println(F("Motor timeout..."));
   }
   
   doorMotor->run(RELEASE);
@@ -106,7 +106,7 @@ void closeDoor()
 {
   if( isDoorClosed() )
   {
-    Serial.println("Door is already closed!");
+    Serial.println(F("Door is already closed!"));
     return; 
   }
   
@@ -126,11 +126,11 @@ void closeDoor()
   
   if( isDoorClosed() )
   {
-    Serial.println("Door is now close.");
+    Serial.println(F("Door is now closed."));
   }
   else
   {
-    Serial.println("Motor timeout...");
+    Serial.println(F("Motor timeout..."));
   }
   
   
@@ -185,7 +185,7 @@ void wakeUp()
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("############### Setup ##############");
+  Serial.println(F("############### Setup ##############"));
   
   pinMode(doorOpenPin, INPUT_PULLUP);      
   pinMode(doorClosedPin, INPUT_PULLUP);
@@ -203,12 +203,12 @@ void setup() {
   Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
   DateTime currentDateTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
 
-  Serial.print("Current Date is: ");
+  Serial.print(F("Current Date is: "));
   Serial.print(currentDateTime.date.month, DEC);
   Serial.print("  ");
   Serial.println(currentDateTime.date.date, DEC);
 
-  Serial.print("Current Time is: ");
+  Serial.print(F("Current Time is: "));
   printTimeString(currentDateTime.time);
   Serial.println();
    
@@ -218,38 +218,39 @@ void setup() {
   
   Time doorOpenTime = getDoorOpenTime( currentDateTime.date );
   Time doorCloseTime = getDoorCloseTime( currentDateTime.date );
-  Serial.print("Door Open Time is: ");
+  Serial.print(F("Door Open Time is: "));
   printTimeString(doorOpenTime);
   Serial.println();
-  Serial.print("Door Close Time is: ");
+  Serial.print(F("Door Close Time is: "));
   printTimeString(doorCloseTime);
   Serial.println();
   
-  if( currentDateTime.time.hour < doorOpenTime.hour  &&
+  if( currentDateTime.time.hour <= doorOpenTime.hour  &&
       currentDateTime.time.minute < doorOpenTime.minute )
   {
     //Time is before the door open time...close the door
-    Serial.println("Current Time is less than Door Open Time");
-    Serial.println("Door should be closed!");
+    Serial.println(F("Current Time is less than Door Open Time"));
+    Serial.println(F("Door should be closed!"));
     closeDoor();
   }
-  else if( currentDateTime.time.hour < doorCloseTime.hour &&
+  else if( currentDateTime.time.hour <= doorCloseTime.hour &&
            currentDateTime.time.minute < doorCloseTime.minute )
   {
     //Time is before the door close time...open the door
-    Serial.print("Current Time is greater than Door Open Time,");
-    Serial.println(" but less than Door Close Time.");
-    Serial.println("Door should be open!");
+    Serial.print(F("Current Time is greater than Door Open Time,"));
+    Serial.println(F(" but less than Door Close Time."));
+    Serial.println(F("Door should be open!"));
     openDoor();
   }
   else
   {
     //Time is after the door close time...close the door
-    Serial.println("Current Time is greater than Door Close Time.");
-    Serial.println("Door should be close!");
+    Serial.println(F("Current Time is greater than Door Close Time."));
+    Serial.println(F("Door should be closed!"));
     closeDoor();
   }
-
+  Serial.println(F("############### End ##############"));
+  Serial.flush();
 }
 
 void loop(){
@@ -263,14 +264,14 @@ void loop(){
   //not sure why you have to do this... 
   Clock.checkIfAlarm(1);
 
-  Serial.print("Go to sleep until ");
+  Serial.print(F("Go to sleep until "));
   printTimeString(alarmTime.time);
   Serial.println();
 
   enterSleep();
   wakeUp();
 
-  Serial.print("Stop Sleeping, it's ");
+  Serial.print(F("Stop Sleeping, it's "));
   printTimeString(currentTime.time);
   Serial.println();  
   
@@ -280,12 +281,12 @@ void loop(){
   //want to open the door.
   if( gHour < 12 )
   {
-     Serial.println("Open the Coop Door!");
+     Serial.println(F("Open the Coop Door!"));
      openDoor();
   }
    else
    {
-     Serial.println("Close the Coop Door!");
+     Serial.println(F("Close the Coop Door!"));
      closeDoor();
    }  
 }
