@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h> // for function sprintf
 
-#define DEBUG_PRINT 1
+//#define DEBUG_PRINT 1
 
 struct SunRiseAndSetData {
   Date startDate;
@@ -41,7 +41,7 @@ SunRiseAndSetData sunData[24] = {
 };
 
 Time sunriseExtraTime = { 0, 20, 0 };
-Time sunsetExtraTime = { 0, 15, 0 };
+Time sunsetExtraTime = { 0, 20, 0 };
 
 struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
 {
@@ -229,8 +229,7 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
   
   Time doorOpenTime = getDoorOpenTime( currentDateTime.date );  
   
-  if( currentDateTime.time.hour <= doorOpenTime.hour  &&
-      currentDateTime.time.minute < doorOpenTime.minute )
+  if( isTimeLessThan( currentDateTime.time, doorOpenTime ) )
   {
     alarmTime.time = doorOpenTime;
     alarmTime.date = currentDateTime.date;
@@ -246,8 +245,7 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
   
   Time doorCloseTime = getDoorCloseTime( currentDateTime.date );
   
-  if( currentDateTime.time.hour <= doorCloseTime.hour &&
-      currentDateTime.time.hour < doorCloseTime.minute )
+  if( isTimeLessThan( currentDateTime.time, doorCloseTime) )
   {
     alarmTime.time = doorCloseTime;
     alarmTime.date = currentDateTime.date;
@@ -350,4 +348,19 @@ void printTimeString( struct Time temp )
            temp.minute, 
            temp.seconds );
   Serial.print(timeString);
-} 
+}
+
+bool isTimeLessThan( struct Time t1, struct Time t2 )
+{
+  if( t1.hour < t2.hour )
+    return true;
+  else if( t1.hour == t2.hour &&
+           t1.minute < t2.minute )
+    return true;
+  else if( t1.hour == t2.hour &&
+           t1.minute == t2.minute &&
+           t1.seconds < t2.seconds )
+    return true;
+  
+  return false;  
+}

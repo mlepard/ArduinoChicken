@@ -25,7 +25,7 @@ byte ALRM1_SET = ALRM1_MATCH_HR_MIN_SEC;
 #define ALRM2_ONCE_PER_MIN     0b111   // once per minute (00 seconds of every minute)
 #define ALRM2_MATCH_MIN        0b110   // when minutes match
 #define ALRM2_MATCH_HR_MIN     0b100   // when hours and minutes match
-byte ALRM2_SET = 0b000;
+byte ALRM2_SET = ALRM2_MATCH_HR_MIN;
 
 byte AlarmBits;
 
@@ -181,6 +181,7 @@ void enterSleep(void)
 void wakeUp()
 {
   Clock.turnOffAlarm(1);
+  Clock.checkIfAlarm(1);
 }
 
 void setup() {
@@ -225,16 +226,14 @@ void setup() {
   printTimeString(doorCloseTime);
   Serial.println();
   
-  if( currentDateTime.time.hour <= doorOpenTime.hour  &&
-      currentDateTime.time.minute < doorOpenTime.minute )
+  if( isTimeLessThan( currentDateTime.time, doorOpenTime ) )
   {
     //Time is before the door open time...close the door
     Serial.println(F("Current Time is less than Door Open Time"));
     Serial.println(F("Door should be closed!"));
     closeDoor();
   }
-  else if( currentDateTime.time.hour <= doorCloseTime.hour &&
-           currentDateTime.time.minute < doorCloseTime.minute )
+  else if( isTimeLessThan( currentDateTime.time, doorCloseTime ) )
   {
     //Time is before the door close time...open the door
     Serial.print(F("Current Time is greater than Door Open Time,"));
@@ -251,15 +250,19 @@ void setup() {
   }
   Serial.println(F("############### End ##############"));
   Serial.flush();
+  
+  Clock.checkIfAlarm(1);
+  Clock.checkIfAlarm(2);  
 }
 
 void loop(){
   
   Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
   DateTime currentTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
-  
-  DateTime alarmTime = getNextDoorAlarm( currentTime );
-  Clock.setA1Time(gDoW, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, true, false, false);
+    
+  DateTime alarmTime = getNextDoorAlarm( currentTime ); 
+  //Clock.setA1Time(gDate, gHour, gMinute, gSecond + 2, AlarmBits, false, false, false);
+  Clock.setA1Time(alarmTime.date.date, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, false, false, false);
   Clock.turnOnAlarm(1);
   //not sure why you have to do this... 
   Clock.checkIfAlarm(1);
