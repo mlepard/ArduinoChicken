@@ -143,12 +143,14 @@ void closeDoor()
 void RTCAlarmTriggered()
 {
   detachInterrupt(0);
+  detachInterrupt(1);
 }
 
 void enterSleep(void)
 {
     /* Setup pin2 as an interrupt and attach handler. */
   attachInterrupt(0, RTCAlarmTriggered, LOW);
+  attachInterrupt(1, RTCAlarmTriggered, LOW);
   delay(100);
   
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
@@ -253,6 +255,8 @@ void setup() {
   
   Clock.checkIfAlarm(1);
   Clock.checkIfAlarm(2);  
+  
+  Clock.turnOffAlarm(2);
 }
 
 void loop(){
@@ -262,17 +266,31 @@ void loop(){
     
   DateTime alarmTime = getNextDoorAlarm( currentTime ); 
   //Clock.setA1Time(gDate, gHour, gMinute, gSecond + 2, AlarmBits, false, false, false);
+  //alarmTime.time.hour = 21;
+  //alarmTime.time.minute = 27;
+  //alarmTime.time.seconds = 0;
   Clock.setA1Time(alarmTime.date.date, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, false, false, false);
   Clock.turnOnAlarm(1);
   //not sure why you have to do this... 
   Clock.checkIfAlarm(1);
 
   Serial.print(F("Go to sleep until "));
+  if( alarmTime.date.date != currentTime.date.date )
+  {
+    Serial.print(F("tomorrow "));
+  }
   printTimeString(alarmTime.time);
   Serial.println();
 
   enterSleep();
   wakeUp();
+
+  Clock.getTime(gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond);
+  currentTime.time.hour = gHour;
+  currentTime.time.minute = gMinute;
+  currentTime.time.seconds = gSecond;
+  currentTime.date.month = gMonth;
+  currentTime.date.date = gDate;
 
   Serial.print(F("Stop Sleeping, it's "));
   printTimeString(currentTime.time);

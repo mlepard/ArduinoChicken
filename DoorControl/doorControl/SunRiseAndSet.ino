@@ -41,7 +41,7 @@ SunRiseAndSetData sunData[24] = {
 };
 
 Time sunriseExtraTime = { 0, 20, 0 };
-Time sunsetExtraTime = { 0, 20, 0 };
+Time sunsetExtraTime = { 0, 25, 0 };
 
 struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
 {
@@ -121,7 +121,8 @@ struct Time getDoorOpenTime( struct Date currentDate )
   Time dateDeltaTime = {0, 0, 0};
   if( currentSunData.sunriseDelta < 0 )
   { 
-    dateDeltaTime.minute = deltaDate * -1*currentSunData.sunriseDelta;
+    float temp =  deltaDate * (float)(-1*currentSunData.sunriseDelta);
+    dateDeltaTime.minute = (uint8_t)temp;
     doorOpenTime = subtractTime( currentSunData.sunrise, dateDeltaTime );
     
 #ifdef DEBUG_PRINT  
@@ -134,7 +135,8 @@ struct Time getDoorOpenTime( struct Date currentDate )
   }
   else
   {
-    dateDeltaTime.minute = deltaDate * currentSunData.sunriseDelta;
+    float temp =  deltaDate * (float)(currentSunData.sunriseDelta);
+    dateDeltaTime.minute = (uint8_t)temp;
     doorOpenTime = addTime( currentSunData.sunrise, dateDeltaTime );
 #ifdef DEBUG_PRINT  
     Serial.print(F("  DateDeltaTime is: ")); 
@@ -182,8 +184,9 @@ struct Time getDoorCloseTime( struct Date currentDate )
 
   Time dateDeltaTime = {0, 0, 0};
   if( currentSunData.sunsetDelta < 0 )
-  { 
-    dateDeltaTime.minute = deltaDate * -1*currentSunData.sunsetDelta;
+  {
+    float temp =  deltaDate * (float)(-1*currentSunData.sunsetDelta);
+    dateDeltaTime.minute = (uint8_t)temp;
     doorCloseTime = subtractTime( currentSunData.sunset, dateDeltaTime );
 #ifdef DEBUG_PRINT  
     Serial.print(F("  DateDeltaTime is: ")); 
@@ -194,7 +197,8 @@ struct Time getDoorCloseTime( struct Date currentDate )
   }
   else
   {
-    dateDeltaTime.minute = deltaDate * currentSunData.sunsetDelta;
+    float temp =  deltaDate * (float)(currentSunData.sunsetDelta);
+    dateDeltaTime.minute = (uint8_t)temp;
     doorCloseTime = addTime( currentSunData.sunset, dateDeltaTime );
 #ifdef DEBUG_PRINT  
     Serial.print(F("  DateDeltaTime is: ")); 
@@ -227,6 +231,19 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
 
   DateTime alarmTime = { {0,0,0}, {0, 0} };
   
+  /*SunRiseAndSetData currentSunData = getSunRiseAndSetData( currentDateTime.date );
+  
+  if( isTimeLessThan( currentSunData.sunset, currentDateTime.time ) )
+    alarmTime.time = addTime( currentSunData.sunrise, sunriseExtraTime );
+  else if( isTimeLessThan ( currentDateTime.time, currentSunData.sunrise ) )
+    alarmTime.time = addTime( currentSunData.sunrise, sunriseExtraTime );
+  else
+    alarmTime.time = addTime( currentSunData.sunset, sunsetExtraTime );
+  alarmTime.date = currentDateTime.date;
+  
+  return alarmTime;*/
+
+    
   Time doorOpenTime = getDoorOpenTime( currentDateTime.date );  
   
   if( isTimeLessThan( currentDateTime.time, doorOpenTime ) )
@@ -281,6 +298,9 @@ struct DateTime getNextDoorAlarm( struct DateTime currentDateTime )
     Serial.println();
 #endif
 
+   //alarmTime.time.hour = 21;
+   //alarmTime.time.minute = 29;
+
     return alarmTime;
   }
         
@@ -293,12 +313,12 @@ struct Time addTime( struct Time t1, struct Time t2 )
   result.seconds = (t2.seconds + t1.seconds);
   result.minute = (t2.minute + t1.minute);
   result.hour = (t2.hour + t1.hour);
-  if( result.seconds > 60 )
+  if( result.seconds >= 60 )
   {
     result.seconds -= 60;
     result.minute++;
   }
-  if( result.minute > 60 )
+  if( result.minute >= 60 )
   {
     result.minute -= 60;
     result.hour++;
