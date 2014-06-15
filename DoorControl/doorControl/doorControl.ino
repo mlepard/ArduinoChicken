@@ -6,9 +6,10 @@
 #include <avr/power.h>
 
 const int motorNumber = 1;     
-const int doorOpenPin =  3;   
-const int doorClosedPin = 5;
+const int doorOpenPin =  6;   
+const int doorClosedPin = 7;
 const int alarmPin = 2;
+const int doorOverridePin = 3;
 
 const int maxMotorTime = 2 * 1000; //max time for motor to operate in ms
 const int openDoorMotorDirection = FORWARD;
@@ -32,6 +33,9 @@ byte AlarmBits;
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *doorMotor;
 DS3231 Clock;
+
+volatile boolean overrideDoor = false;
+volatile boolean alarmHasGoneOff = false;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
@@ -133,57 +137,15 @@ void closeDoor()
     Serial.println(F("Motor timeout..."));
   }
   
-  
   doorMotor->run(RELEASE);
   
   digitalWrite(13, LOW);
 }
 
-//Interrupt service routine for external interrupt on INT0 pin conntected to /INT
-void RTCAlarmTriggered()
+void turnOffAlarm()
 {
-  detachInterrupt(0);
-  detachInterrupt(1);
-}
-
-void enterSleep(void)
-{
-    /* Setup pin2 as an interrupt and attach handler. */
-  attachInterrupt(0, RTCAlarmTriggered, LOW);
-  attachInterrupt(1, RTCAlarmTriggered, LOW);
-  delay(100);
-  
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  
-  sleep_enable();
-  
-  byte spi_save = SPCR;
-  SPCR = 0;
-  
-  //digitalWrite(13, LOW);
-  power_adc_disable();
-  power_spi_disable();
-  power_timer0_disable();
-  power_timer1_disable();
-  power_timer2_disable();
-  power_twi_disable();   
-  
-  sleep_mode();
-  
-  /* The program will continue from here. */
-  
-  /* First thing to do is disable sleep. */
-  sleep_disable();
-  
-  power_all_enable();
- 
-  SPCR = spi_save; 
-}
-
-void wakeUp()
-{
-  Clock.turnOffAlarm(1);
-  Clock.checkIfAlarm(1);
+    Clock.turnOffAlarm(1);
+    Clock.checkIfAlarm(1);  
 }
 
 void setup() {
@@ -193,6 +155,7 @@ void setup() {
   pinMode(doorOpenPin, INPUT_PULLUP);      
   pinMode(doorClosedPin, INPUT_PULLUP);
   pinMode(alarmPin, INPUT_PULLUP);    
+  pinMode(doorOverridePin, INPUT_PULLUP);    
 
   pinMode(13, OUTPUT);  
     
@@ -296,6 +259,25 @@ void loop(){
   printTimeString(currentTime.time);
   Serial.println();  
   
+  
+  if( overrideDoor )
+  {
+    Serial.print(F("Override the door...."));
+    if( isDoorOpen() )
+    {
+      Serial.println(F("close the door!"));
+      closeDoor();
+    }
+    else
+    {
+      Serial.println(F("open the door!"));
+      openDoor();
+    }
+    overrideDoor = false;
+    return;
+  }
+    
+  Serial.println(F("It's a regular alarm...what to do?"));
   //We've woken up at the next door event time.
   //Quick hack to determine which door event we should do..
   //If we woke up in the morning (before 12 noon) we must
