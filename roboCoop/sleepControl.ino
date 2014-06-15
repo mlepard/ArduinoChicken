@@ -50,6 +50,13 @@ WakeUpReason goToSleep(void)
     //Or it's winter...use the watchdog timer to sleep ~8s
     Serial.flush();
     //wdt_enable(WDTO_8S);
+    
+    if( digitalRead(doorOverridePin) )
+    {
+      attachInterrupt(1, OverrideDoorTriggered, LOW);
+      delay(100);
+    }
+    
     watchdogOn();
     set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Set sleep mode.
     sleep_enable(); // Enable sleep mode.
@@ -86,6 +93,8 @@ WakeUpReason goToSleep(void)
   /* First thing to do is disable sleep. */
   sleep_disable();
   
+ wdt_disable();  
+  
  if( alarmHasGoneOff )
  {
    power_all_enable();
@@ -107,6 +116,7 @@ WakeUpReason goToSleep(void)
  else if( watchDogTimer )
  {
    wdt_disable();
+   watchDogTimer = false;
    Serial.println(F("Woke up via watchdog timer!"));
    Serial.flush();
    return WATCHDOG_TIMER_WAKEUP;

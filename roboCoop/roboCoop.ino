@@ -1,29 +1,31 @@
 #include "RoboCoopDefs.h"
 
-const int DS18S20_Pin = 8; //temperature DS18S20 Signal pin on digital 8
+const int DS18S20_Pin = 12; //temperature DS18S20 Signal pin on digital 8
 const int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 9
-const int TempLED_Pin = 10; //Temperate LED pin on digital 10
-const int doorOpenPin =  6;   
+const int TempLED_Pin = 13; //Temperate LED pin on digital 10
+const int doorOpenPin =  5;   
 const int doorClosedPin = 7;
 const int motorNumber = 1;     
 const int alarmPin = 2;
 const int doorOverridePin = 3;
 
-const boolean isWinter = true;
+const boolean isWinter = false;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
-void setup(void) 
+void setup(void)
 {
   Serial.begin(9600);
   Serial.println(F("Initializing RoboCoop..."));
   
-  //if( isWinter )
-  //  setupTempControl();
+  if( isWinter )
+    setupTempControl();
     
   setupDoorControl();
   setupAlarmControl();
   setupSleepControl();
+  
+  setNextAlarm();
   
   Serial.flush();
 }
@@ -34,8 +36,8 @@ void loop(void)
   
   printCurrentTime();
   
-  //if( isWinter )
-  //  loopTempControl();
+  if( isWinter )
+    loopTempControl();
     
   if( wakeReason == DOOR_OVERRIDE_WAKEUP )
   {

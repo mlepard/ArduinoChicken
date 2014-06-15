@@ -18,7 +18,7 @@ void setupTempControl()
   pinMode(TempLED_Pin, OUTPUT);
 
   float temperature = getTemp();
-  Serial.print(F("Remp Contro Starting Up...temp is "));
+  Serial.print(F("Temp Control Starting Up...temp is "));
   Serial.println(temperature);
   processTemperature(temperature);  
 }
