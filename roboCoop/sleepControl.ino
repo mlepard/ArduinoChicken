@@ -40,9 +40,19 @@ WakeUpReason goToSleep(void)
   watchDogTimer = false;
   alarmHasGoneOff = false;
   overrideDoor = false;
-  byte spi_save = SPCR;  
+  byte spi_save = SPCR;
+  byte adcspa_save = ADCSRA;
+  boolean pinsDisabled = false;
+ 
+  if( !digitalRead(alarmPin) )
+  {
+   Serial.println(F("Can't sleep...alarm pin is active!"));
+   Serial.flush();
+   return  ALARM_WAKEUP;    
+  } 
+   
 
-  if( isWinter || !digitalRead(doorOverridePin) || !digitalRead(alarmPin) )
+  if( isWinter || !digitalRead(doorOverridePin) )
   {
     Serial.println(F("Going to sleep via Watchdog timer..."));
     //if either of our interrupt sources are low at the moment...like
@@ -54,12 +64,13 @@ WakeUpReason goToSleep(void)
     if( digitalRead(doorOverridePin) )
     {
       attachInterrupt(1, OverrideDoorTriggered, LOW);
-      delay(100);
     }
+    attachInterrupt(0, RTCAlarmTriggered, LOW);
+    delay(100);
     
     watchdogOn();
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Set sleep mode.
     sleep_enable(); // Enable sleep mode.
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN); // Set sleep mode.
   }
   else
   {
@@ -70,12 +81,14 @@ WakeUpReason goToSleep(void)
     attachInterrupt(1, OverrideDoorTriggered, LOW);
     delay(100);
   
+    sleep_enable();  
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-  
-    sleep_enable();
   
     spi_save = SPCR;
     SPCR = 0;
+    
+    adcspa_save = ADCSRA;
+    ADCSRA = 0;
   
     //digitalWrite(13, LOW);
     power_adc_disable();
@@ -84,6 +97,13 @@ WakeUpReason goToSleep(void)
     power_timer1_disable();
     power_timer2_disable();
     power_twi_disable();
+    
+    pinsDisabled = true;
+    disableDoorControlPins();
+    disableTempControlPins();
+    
+    MCUCR = _BV (BODS) | _BV (BODSE);  // turn on brown-out enable select
+    MCUCR = _BV (BODS);        // this must be done within 4 clock cycles of above
   }  
   
   sleep_mode();
@@ -98,8 +118,15 @@ WakeUpReason goToSleep(void)
  if( alarmHasGoneOff )
  {
    power_all_enable();
-   SPCR = spi_save;   
+   SPCR = spi_save;
+   ADCSRA = adcspa_save;
+   
    alarmHasGoneOff = false;
+   if( pinsDisabled )
+   {
+     initDoorControlPins();
+     initTempControlPins();
+   }
    Serial.println(F("Woke up via Alarm!"));
    Serial.flush();
    return  ALARM_WAKEUP;
@@ -107,10 +134,17 @@ WakeUpReason goToSleep(void)
  else if( overrideDoor )
  {  
    power_all_enable();
-   SPCR = spi_save;   
+   SPCR = spi_save;
+   ADCSRA = adcspa_save;   
    overrideDoor = false;
+   if( pinsDisabled )
+   {
+     initDoorControlPins();
+     initTempControlPins();
+   }
    Serial.println(F("Woke up via override door!"));
    Serial.flush();
+   
    return DOOR_OVERRIDE_WAKEUP;
  }
  else if( watchDogTimer )

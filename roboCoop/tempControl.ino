@@ -23,6 +23,18 @@ void setupTempControl()
   processTemperature(temperature);  
 }
 
+void initTempControlPins()
+{
+  pinMode(PowerSwitch_Pin, OUTPUT);
+  pinMode(TempLED_Pin, OUTPUT);
+}
+
+void disableTempControlPins()
+{
+  pinMode(PowerSwitch_Pin, OUTPUT);
+  digitalWrite(PowerSwitch_Pin, LOW);
+}
+
 void loopTempControl()
 {
   float temperature = getTemp();

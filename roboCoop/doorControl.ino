@@ -2,7 +2,7 @@
 #include "utility/Adafruit_PWMServoDriver.h"
 
 
-const int maxMotorTime = 2 * 1000; //max time for motor to operate in ms
+const int maxMotorTime = 5 * 1000; //max time for motor to operate in ms
 const int openDoorMotorDirection = FORWARD;
 const int closeDoorMotorDirection = BACKWARD;
 
@@ -98,14 +98,27 @@ void closeDoor()
 
 void setupDoorControl()
 {
-  pinMode(doorOpenPin, INPUT_PULLUP);      
-  pinMode(doorClosedPin, INPUT_PULLUP);
-  pinMode(13, OUTPUT);    
+  initDoorControlPins();
 
   doorMotor = AFMS.getMotor(motorNumber);
   
   AFMS.begin();
   
   doorMotor->setSpeed(motorSpeed);  
+}
+
+void initDoorControlPins()
+{
+  pinMode(doorOpenPin, INPUT_PULLUP);      
+  pinMode(doorClosedPin, INPUT_PULLUP);
+  pinMode(13, OUTPUT);    
+}
+
+void disableDoorControlPins()
+{
+  pinMode(doorOpenPin, OUTPUT);      
+  pinMode(doorClosedPin, OUTPUT);
+  digitalWrite(doorOpenPin, LOW);      
+  digitalWrite(doorClosedPin, LOW);
 }
 

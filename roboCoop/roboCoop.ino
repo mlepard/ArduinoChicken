@@ -9,9 +9,11 @@ const int motorNumber = 1;
 const int alarmPin = 2;
 const int doorOverridePin = 3;
 
-const boolean isWinter = false;
+const boolean isWinter = true;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
+
+boolean tempIsDoorOpen = false;
 
 void setup(void)
 {
@@ -20,12 +22,29 @@ void setup(void)
   
   if( isWinter )
     setupTempControl();
+  else
+  {
+    //Set all pins to output LOW for lowest power conversion.
+    byte i;
+    for (i = 0; i <= 13; i++)
+      pinMode (i, OUTPUT);     // as required
+    for (i = 0; i <= 13; i++)
+      digitalWrite (i, LOW);  // as required
+  
+    pinMode( DS18S20_Pin, OUTPUT );
+    digitalWrite( DS18S20_Pin, HIGH );
+  }
     
   setupDoorControl();
   setupAlarmControl();
   setupSleepControl();
   
   setNextAlarm();
+  
+  if( isDoorOpen )
+    tempIsDoorOpen = true;
+  
+  digitalWrite(13, tempIsDoorOpen);
   
   Serial.flush();
 }
@@ -37,7 +56,13 @@ void loop(void)
   printCurrentTime();
   
   if( isWinter )
+  {
     loopTempControl();
+    if( tempIsDoorOpen )
+      digitalWrite(13, HIGH);
+    else
+      digitalWrite(13, LOW);
+  }
     
   if( wakeReason == DOOR_OVERRIDE_WAKEUP )
   {
@@ -45,11 +70,13 @@ void loop(void)
     {
       Serial.println(F("close the door!"));
       closeDoor();
+      tempIsDoorOpen = false;
     }
     else
     {
       Serial.println(F("open the door!"));
       openDoor();
+      tempIsDoorOpen = true;
     }
     return;    
   }
@@ -63,11 +90,13 @@ void loop(void)
     {
        Serial.println(F("Open the Coop Door!"));
        openDoor();
+       tempIsDoorOpen = true;
     }
      else
      {
        Serial.println(F("Close the Coop Door!"));
        closeDoor();
+       tempIsDoorOpen = false;
      }  
      setNextAlarm();
   }
