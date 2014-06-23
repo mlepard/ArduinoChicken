@@ -6,7 +6,7 @@ const int maxMotorTime = 5 * 1000; //max time for motor to operate in ms
 const int openDoorMotorDirection = FORWARD;
 const int closeDoorMotorDirection = BACKWARD;
 
-const int motorSpeed = 25;
+const int motorSpeed = 45;
 
 extern const int doorOpenPin;   
 extern const int doorClosedPin;
@@ -57,7 +57,6 @@ void openDoor()
   }
   
   doorMotor->run(RELEASE);
-  digitalWrite(13, HIGH);
 }
 
 void closeDoor()
@@ -93,7 +92,6 @@ void closeDoor()
   
   doorMotor->run(RELEASE);
   
-  digitalWrite(13, LOW);
 }
 
 void setupDoorControl()
@@ -111,7 +109,6 @@ void initDoorControlPins()
 {
   pinMode(doorOpenPin, INPUT_PULLUP);      
   pinMode(doorClosedPin, INPUT_PULLUP);
-  pinMode(13, OUTPUT);    
 }
 
 void disableDoorControlPins()
