@@ -14,7 +14,7 @@ const boolean isWinter = false;
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
 boolean tempIsDoorOpen = false;
-boolean inDebugMode = true;
+boolean inDebugMode = false;
 
 void setup(void)
 {
