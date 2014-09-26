@@ -2,8 +2,8 @@
 #include "utility/Adafruit_PWMServoDriver.h"
 
 
-const int maxMotorOpenTime = 8.0 * 1000; //max time for motor to operate when opening, in ms
-const int maxMotorCloseTime = 11.0 * 1000; //max time for motor to operate when closing, in ms
+const int maxMotorOpenTime = 9.5 * 1000; //max time for motor to operate when opening, in ms
+const int maxMotorCloseTime = 11.5 * 1000; //max time for motor to operate when closing, in ms
 const int openDoorMotorDirection = FORWARD;
 const int closeDoorMotorDirection = BACKWARD;
 
@@ -18,7 +18,7 @@ long debounceDelay = 50;    // the debounce time; increase if the output flicker
 
 int doorOpenState;
 int doorClosedState;
-int lastButtonState = LOW;
+int lastSwitchState = LOW;
 
 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
@@ -26,44 +26,67 @@ Adafruit_DCMotor *doorMotor;
 
 bool isDoorOpen()
 {
-  return doorOpenState;
+  return !digitalRead(doorOpenPin);
 }
 
 bool isDoorClosed()
 {
-  return doorClosedState;
+  return !digitalRead(doorClosedPin);
 }
 
 //Shoud be called periodically, in while loop to debounce the switch..
-bool debounceDoorOpen()
+void debounceDoorOpen()
 {
-  int reading = !digitalRead(doorOpenPin);
+  int reading = isDoorOpen();
   
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  } 
-  
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != doorOpenState) {
-      doorOpenState = reading;
+  if( reading == LOW )
+  {
+    //Currently, the switch is open..we don't care about it.
+    return;
+  }
+  else
+  {      
+    //The switch is now closed
+    if( lastSwitchState == LOW )
+    {
+      //The switch was last open...therefore
+      //(re)start the debounce timer running
+      lastDebounceTime = millis();
     }
-  }  
+      
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      //If the reading is still high after this debounce period, the switch is permanently closed.
+      doorOpenState = HIGH;
+    }
+  }
+  lastSwitchState = reading;  
 }
 
 //Shoud be called periodically, in while loop to debounce the switch..
-bool debounceDoorClosed()
+void debounceDoorClosed()
 {
-  int reading = !digitalRead(doorClosedPin);
+  int reading = isDoorClosed();
   
-  if (reading != lastButtonState) {
-    lastDebounceTime = millis();
-  } 
-  
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    if (reading != doorClosedState) {
-      doorClosedState = reading;
+  if( reading == LOW )
+  {
+    return;
+  }
+  else
+  {
+    //The switch is now closed, after it was last open.
+    if( lastSwitchState == LOW )
+    {
+      //(re)start the debounce timer running
+      lastDebounceTime = millis();
     }
-  }  
+      
+    if ((millis() - lastDebounceTime) > debounceDelay) {
+      //If the reading is still high after this debounce period, the switch it permanently closed.
+      doorClosedState = HIGH;
+    }
+  }
+
+  lastSwitchState = reading;  
 }
 
 void openDoor()
@@ -79,15 +102,18 @@ void openDoor()
   long runningTime = currentTime - startTime;
 
   doorMotor->setSpeed(motorOpenSpeed);  
+  
+  doorOpenState = isDoorOpen();
+  lastSwitchState = doorOpenState;
     
-  while( !isDoorOpen() &&
+  while( !doorOpenState &&
          runningTime < maxMotorOpenTime )
   
   {
     doorMotor->run(openDoorMotorDirection);
     currentTime = millis();
     runningTime = currentTime - startTime;
-    delay(10);
+    delay(5);
     debounceDoorOpen();
   }
   
@@ -115,16 +141,19 @@ void closeDoor()
   long currentTime = millis();
   long runningTime = currentTime - startTime;
   
-  doorMotor->setSpeed(motorCloseSpeed);  
+  doorMotor->setSpeed(motorCloseSpeed);
+
+  doorClosedState = isDoorClosed();  
+  lastSwitchState = doorClosedState;  
     
-  while( !isDoorClosed() &&
+  while( !doorClosedState &&
          runningTime < maxMotorCloseTime )
   
   {
     doorMotor->run(closeDoorMotorDirection);
     currentTime = millis();
     runningTime = currentTime - startTime;
-    delay(10);
+    delay(5);
     debounceDoorClosed();
   }
   

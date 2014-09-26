@@ -61,11 +61,11 @@ WakeUpReason goToSleep(void)
     Serial.flush();
     //wdt_enable(WDTO_8S);
     
+    attachInterrupt(0, RTCAlarmTriggered, LOW);
     if( digitalRead(doorOverridePin) )
     {
       attachInterrupt(1, OverrideDoorTriggered, LOW);
     }
-    attachInterrupt(0, RTCAlarmTriggered, LOW);
     delay(100);
     
     watchdogOn();
