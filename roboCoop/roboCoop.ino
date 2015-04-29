@@ -1,6 +1,6 @@
 #include "RoboCoopDefs.h"
 
-const int DS18S20_Pin = 12; //temperature DS18S20 Signal pin on digital 8
+const int DS18S20_Pin = 12; //temperature DS18S20 Signal pin on digital 12
 const int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 9
 const int TempLED_Pin = 13; //Temperate LED pin on digital 10
 const int doorOpenPin =  5;   

@@ -32,7 +32,7 @@ SunRiseAndSetData sunData[24] = {
 };
 
 Time sunriseExtraTime = { 0, 20, 0 };
-Time sunsetExtraTime = { 0, 25, 0 };
+Time sunsetExtraTime = { 0, 45, 0 };
 
 struct SunRiseAndSetData getSunRiseAndSetData( struct Date currentDate )
 {

@@ -3,8 +3,6 @@
 
 #include <Arduino.h>
 
-#define byte uint8_t
-
 enum WakeUpReason {
   ALARM_WAKEUP = 0,
   DOOR_OVERRIDE_WAKEUP,

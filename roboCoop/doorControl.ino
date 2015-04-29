@@ -2,13 +2,13 @@
 #include "utility/Adafruit_PWMServoDriver.h"
 
 
-const int maxMotorOpenTime = 9.5 * 1000; //max time for motor to operate when opening, in ms
-const int maxMotorCloseTime = 11.5 * 1000; //max time for motor to operate when closing, in ms
+const int maxMotorOpenTime = 10.5 * 1000; //max time for motor to operate when opening, in ms
+const int maxMotorCloseTime = 13.5 * 1000; //max time for motor to operate when closing, in ms
 const int openDoorMotorDirection = FORWARD;
 const int closeDoorMotorDirection = BACKWARD;
 
 const int motorOpenSpeed = 200;
-const int motorCloseSpeed = 100;
+const int motorCloseSpeed = 130;
 
 extern const int doorOpenPin;   
 extern const int doorClosedPin;

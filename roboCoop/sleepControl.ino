@@ -18,21 +18,20 @@ extern const int doorOverridePin;
 void setupSleepControl()
 {
   pinMode(alarmPin, INPUT_PULLUP);    
-  pinMode(doorOverridePin, INPUT_PULLUP);      
+  pinMode(doorOverridePin, INPUT_PULLUP);
 }
 
 //Interrupt service routine for external interrupt on INT0 pin conntected to /INT
 void RTCAlarmTriggered()
 {
-    alarmHasGoneOff = true;
-    detachInterrupt(0);
+   alarmHasGoneOff = true;
+   detachInterrupt(0);
 }
 
 //Interrupt service routine for external interrupt on INT0 pin conntected to /INT
 void OverrideDoorTriggered()
 {
     overrideDoor = true;  
-    detachInterrupt(1);
 }
 
 WakeUpReason goToSleep(void)
@@ -75,7 +74,6 @@ WakeUpReason goToSleep(void)
   else
   {
     Serial.println(F("Going to sleep via interrupt pins..."));
-    Serial.flush();
     /* Setup pin2 as an interrupt and attach handler. */
     attachInterrupt(0, RTCAlarmTriggered, LOW);
     attachInterrupt(1, OverrideDoorTriggered, LOW);
@@ -104,8 +102,7 @@ WakeUpReason goToSleep(void)
     
     MCUCR = _BV (BODS) | _BV (BODSE);  // turn on brown-out enable select
     MCUCR = _BV (BODS);        // this must be done within 4 clock cycles of above
-  }  
-  
+  }      
   sleep_mode();
   
   /* The program will continue from here. */
@@ -137,6 +134,7 @@ WakeUpReason goToSleep(void)
    SPCR = spi_save;
    ADCSRA = adcspa_save;   
    overrideDoor = false;
+   detachInterrupt(1);
    if( pinsDisabled )
    {
      initDoorControlPins();
