@@ -5,8 +5,6 @@ extern const int chickenDoorOpenPin;
 extern const int chickenDoorClosedPin;
 extern const int turkeyPotAnalogPin;   
 
-const long debounceDelay = 50;    // the debounce time; increase if the output flickers
-
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 
 //abstract class Sensor

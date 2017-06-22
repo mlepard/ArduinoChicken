@@ -11,12 +11,16 @@ const int turkeyMotorNumber = 2;
 const int alarmPin = 2;
 const int doorOverridePin = 3;
 
-const boolean isWinter = false;
+const boolean isWinter = true;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
 boolean tempIsDoorOpen = false;
 boolean inDebugMode = false;
+
+Time sunriseExtraTime = { 0, 0, 0 };
+Time sunsetExtraTime = { 0, 0, 0 };
+
 
 void setup(void)
 {
@@ -32,7 +36,16 @@ void setup(void)
     digitalWrite (i, LOW);  // as required
 
   if( isWinter )
+  {
     setupTempControl();
+    sunriseExtraTime.minute = 5;
+    sunsetExtraTime.minute = 45;
+  }
+  else
+  {
+    sunriseExtraTime.minute = 25;
+    sunsetExtraTime.minute = 25;    
+  }
       
   setupDoorControl();
   setupAlarmControl();
