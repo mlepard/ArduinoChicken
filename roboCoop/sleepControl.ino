@@ -97,7 +97,7 @@ WakeUpReason goToSleep(void)
     power_twi_disable();
     
     pinsDisabled = true;
-    disableDoorControlPins();
+    prepareDoorsForSleep();
     disableTempControlPins();
     
     MCUCR = _BV (BODS) | _BV (BODSE);  // turn on brown-out enable select
@@ -121,7 +121,7 @@ WakeUpReason goToSleep(void)
    alarmHasGoneOff = false;
    if( pinsDisabled )
    {
-     initDoorControlPins();
+     wakeDoorsFromSleep();
      initTempControlPins();
    }
    Serial.println(F("Woke up via Alarm!"));
@@ -137,7 +137,7 @@ WakeUpReason goToSleep(void)
    detachInterrupt(1);
    if( pinsDisabled )
    {
-     initDoorControlPins();
+     wakeDoorsFromSleep();
      initTempControlPins();
    }
    Serial.println(F("Woke up via override door!"));

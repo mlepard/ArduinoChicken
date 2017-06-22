@@ -10,6 +10,11 @@ enum WakeUpReason {
   UNKNOWN_WAKEUP
 };
 
+enum CoopDoorType {
+  CHICKEN,
+  TURKEY
+};
+
 struct Time {
   byte hour;
   byte minute;

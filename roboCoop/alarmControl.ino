@@ -55,7 +55,7 @@ void setupAlarmControl(void)
     //Time is before the door open time...close the door
     Serial.println(F("Current Time is less than Door Open Time"));
     Serial.println(F("Door should be closed!"));
-    closeDoor();
+    closeDoors();
   }
   else if( isTimeLessThan( currentDateTime.time, doorCloseTime ) )
   {
@@ -63,14 +63,14 @@ void setupAlarmControl(void)
     Serial.print(F("Current Time is greater than Door Open Time,"));
     Serial.println(F(" but less than Door Close Time."));
     Serial.println(F("Door should be open!"));
-    openDoor();
+    openDoors();
   }
   else
   {
     //Time is after the door close time...close the door
     Serial.println(F("Current Time is greater than Door Close Time."));
     Serial.println(F("Door should be closed!"));
-    closeDoor();
+    closeDoors();
   }
   Serial.println(F("############### End ##############"));
   Serial.flush();
