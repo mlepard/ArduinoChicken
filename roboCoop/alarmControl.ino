@@ -87,7 +87,7 @@ void setNextAlarm()
   DateTime currentTime = { {gHour, gMinute, gSecond}, {gMonth, gDate} };
     
   DateTime alarmTime = getNextDoorAlarm( currentTime ); 
-  Clock.setA1Time(alarmTime.date.date, alarmTime.time.hour, alarmTime.time.minute, alarmTime.time.seconds, AlarmBits, false, false, false);
+  Clock.setA1Time((byte)alarmTime.date.date, (byte)alarmTime.time.hour, (byte)alarmTime.time.minute, (byte)alarmTime.time.seconds, AlarmBits, false, false, false);
   Clock.turnOnAlarm(1);
   //not sure why you have to do this... 
   Clock.checkIfAlarm(1);

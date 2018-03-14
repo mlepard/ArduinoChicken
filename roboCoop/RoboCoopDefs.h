@@ -16,16 +16,16 @@ enum CoopDoorType {
 };
 
 struct Time {
-  byte hour;
-  byte minute;
-  byte seconds;
+  int hour;
+  int minute;
+  int seconds;
 };
 
 typedef struct Time Time;
 
 struct Date {
-  byte month;
-  byte date;
+  int month;
+  int date;
 };
 
 typedef struct Date Date;
@@ -41,8 +41,8 @@ struct SunRiseAndSetData {
   Date startDate;
   Time sunrise;
   Time sunset;
-  int8_t sunriseDelta;
-  int8_t sunsetDelta;
+  int sunriseDelta;
+  int sunsetDelta;
 };
 
 typedef struct SunRiseAndSetData SunRiseAndSetData;

@@ -55,7 +55,7 @@ class PulleyDoor : public CoopDoor
     void disableDoorControlPins();
     bool debounceDoorClosed();
     bool debounceDoorOpen();
-    void setupDoorControl();
+    //void setupDoorControl();
   
     int doorOpenPin;
     int doorClosedPin;
@@ -74,9 +74,9 @@ class LeverDoor : public CoopDoor
     virtual bool isDoorClosed();
     
     void setupPotSensor( int iPotSensorPint, int iDoorOpenDirection, 
-                         int iDoorClosedDirection, int iSafeMaxVoltage,
-                         int iSafeMinVoltage, int iDangerMinVoltage,
-                         int iDangerMaxVoltage );
+                         int iDoorClosedDirection, float iSafeMaxVoltage,
+                         float iSafeMinVoltage, float iDangerMinVoltage,
+                         float iDangerMaxVoltage );
     
   private:
     int potSensorPin;
@@ -183,8 +183,9 @@ void CoopDoor::setupMotor( int iMotorNumber, int openDirection, int closedDireci
   closeDoorMotorDirection = closedDireciton;
   maxMotorOpenTime = maxOpenTime * 1000;
   maxMotorCloseTime = maxCloseTime * 1000;
-  motorOpenSpeed = maxOpenTime;
-  motorCloseSpeed = maxCloseTime;  
+  motorOpenSpeed = openSpeed;
+  motorCloseSpeed = closedSpeed;  
+  motorNumber = iMotorNumber;
 }
                         
 
@@ -208,9 +209,9 @@ LeverDoor::LeverDoor() :
 }
 
 void LeverDoor::setupPotSensor(int iPotSensorPin, int iDoorOpenDirection, 
-                         int iDoorClosedDirection, int iSafeMaxVoltage,
-                         int iSafeMinVoltage, int iDangerMinVoltage,
-                         int iDangerMaxVoltage)
+                         int iDoorClosedDirection, float iSafeMaxVoltage,
+                         float iSafeMinVoltage, float iDangerMinVoltage,
+                         float iDangerMaxVoltage)
 {
   potSensorPin = iPotSensorPin;
   doorOpenSensorDirection = iDoorOpenDirection;
@@ -470,9 +471,11 @@ void setupDoorControl()
   chickenDoor.setupStatePins( chickenDoorOpenPin, chickenDoorClosedPin, 50 );
   chickenDoor.setupDoor();
   
-  turkeyDoor.setupMotor(turkeyMotorNumber, FORWARD, BACKWARD, 5.5, 5.5, 10, 10 );
-  turkeyDoor.setupPotSensor( turkeyPotAnalogPin, HIGH, LOW, 3.0, 0.1, 0.0, 4.0 );
+  turkeyDoor.setupMotor(turkeyMotorNumber, FORWARD, BACKWARD, 10.5, 13.5, 200, 200 );
+  turkeyDoor.setupPotSensor( turkeyPotAnalogPin, LOW, HIGH, 4.70, 1.32, 1.0, 4.82 );
   turkeyDoor.setupDoor();
+
+  AFMS.begin();
 }
 
 bool isDoorOpen( CoopDoorType door )

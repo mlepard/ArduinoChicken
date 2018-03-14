@@ -51,7 +51,7 @@ WakeUpReason goToSleep(void)
   } 
    
 
-  if( isWinter || !digitalRead(doorOverridePin) )
+  if( true || isWinter || !digitalRead(doorOverridePin) )
   {
     Serial.println(F("Going to sleep via Watchdog timer..."));
     //if either of our interrupt sources are low at the moment...like

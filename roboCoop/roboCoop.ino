@@ -5,18 +5,18 @@ const int PowerSwitch_Pin = 9; //Powerswitch Output pin on digital 9
 const int TempLED_Pin = 13; //Temperate LED pin on digital 10
 const int chickenDoorOpenPin =  5;   
 const int chickenDoorClosedPin = 7;
-const int turkeyPotAnalogPin = 0;
+const int turkeyPotAnalogPin = 2;
 const int chickenMotorNumber = 1;     
 const int turkeyMotorNumber = 2;     
 const int alarmPin = 2;
 const int doorOverridePin = 3;
 
-const boolean isWinter = true;
+const boolean isWinter = false;
 
 byte gYear, gMonth, gDate, gDoW, gHour, gMinute, gSecond;
 
 boolean tempIsDoorOpen = false;
-boolean inDebugMode = false;
+boolean inDebugMode = true;
 
 Time sunriseExtraTime = { 0, 0, 0 };
 Time sunsetExtraTime = { 0, 0, 0 };
